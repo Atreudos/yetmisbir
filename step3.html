@@ -8,6 +8,7 @@ html,body{margin:0;height:100%;background:#000;color:#fff;font-family:Georgia,"T
 body::after{content:"";position:fixed;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 45%,rgba(0,0,0,.85))}
 .scene{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;text-align:center;opacity:0;visibility:hidden;transition:opacity 1.4s,visibility 1.4s}
 .scene.on{opacity:1;visibility:visible}
+.stage{font-size:clamp(26px,8vw,44px);letter-spacing:.4em;padding-left:.4em;font-weight:400}
 .q{font-size:clamp(19px,5vw,26px);line-height:1.5;max-width:520px;margin:0 0 30px}
 .fade{opacity:0;transition:opacity 2s}.fade.on{opacity:1}
 .keys{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:min(80vw,300px)}
@@ -20,6 +21,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 #bk{position:fixed;inset:0;background:#000;opacity:0;transition:opacity 2.5s;z-index:60;pointer-events:none}#bk.on{opacity:1}
 </style></head><body>
 
+<section class="scene" id="st"><div class="stage">STAGE 3</div></section>
 <section class="scene" id="sc"><p class="q" id="score"></p></section>
 
 <section class="scene" id="sl"><p class="q fade" id="q">So tell me.<br>Which letter do you think is <b><u>right</u></b>?</p>
@@ -46,7 +48,7 @@ async function type(el,txt,sp=70){el.textContent='';for(const c of txt){el.textC
 'UAEONRST'.split('').forEach(c=>{const b=document.createElement('button');b.textContent=c;b.onclick=()=>pick(b,c);$('#keys').appendChild(b)});
 
 (async()=>{
-  await wait(1200);
+  show('st');await wait(3400);show('');await wait(1600);
   if(a){const it=[a.letter==='U',DATES.some(d=>nd(d)===nd(a.date))];if(CORRECT_WORD)it.push(nw(a.word)===nw(CORRECT_WORD));
     const r=it.filter(Boolean).length;score=r+' right. '+(it.length-r)+' wrong.';
     show('sc');await wait(1200);await type($('#score'),score);await wait(3200);show('sl')}
