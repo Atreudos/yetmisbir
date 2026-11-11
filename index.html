@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>71</title>
+<style>
+  :root { --bg:#000; --fg:#fff; --muted:#cfcfcf; --font:Georgia,"Times New Roman",serif; --ease:cubic-bezier(.2,.7,.2,1); }
+  * { box-sizing:border-box; }
+  html,body { margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); }
+  body.intro { overflow:hidden; }
+
+  /* ---------- atmosphere ---------- */
+  body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:40;
+    background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.7) 100%); }
+  .grain { position:fixed; inset:-50%; pointer-events:none; z-index:41; opacity:.07; animation:grain 1s steps(6) infinite;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  @keyframes grain { 0%{transform:translate(0,0)} 20%{transform:translate(-3%,2%)} 40%{transform:translate(2%,-3%)} 60%{transform:translate(-2%,-1%)} 80%{transform:translate(3%,3%)} 100%{transform:translate(0,0)} }
+
+  /* ---------- hero ---------- */
+  .hero { height:100vh; height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center;
+          position:relative; cursor:pointer; overflow:hidden; transition:height 1.5s cubic-bezier(.65,0,.25,1); }
+  .hero.done { --dw:min(88vw,380px); height:calc(var(--dw) + 120px); justify-content:flex-start; padding-top:72px; cursor:default; }
+  .hero h1 { position:absolute; top:22px; margin:0; font-weight:400; font-size:34px; opacity:0; transition:opacity 1.2s 1.3s; }
+  .hero.done h1 { opacity:1; }
+
+  .logo { width:min(88vw,640px,80dvh); aspect-ratio:1; transition:width 1.5s cubic-bezier(.65,0,.25,1);
+          opacity:0; animation:appear 3s .3s var(--ease) forwards; }
+  .hero.done .logo { width:var(--dw); }
+  @keyframes appear { from{opacity:0; filter:blur(14px); transform:scale(.96)} to{opacity:1; filter:blur(0); transform:none} }
+  .logo-in { position:relative; width:100%; height:100%; transition:transform .8s ease-out; }
+  .logo-in img { position:absolute; inset:0; width:100%; height:100%; display:block; user-select:none; -webkit-user-drag:none; }
+  .l-ring  { animation:spin 150s linear infinite, drift 11s ease-in-out infinite alternate; }
+  .l-snake { animation:spin 110s linear infinite reverse, drift 8.5s ease-in-out -3s infinite alternate-reverse; }
+  .l-at    { animation:glow 9s ease-in-out infinite; }
+  .l-sol   { transform-origin:15.7% 39.6%; filter:drop-shadow(0 0 3px #000); animation:sway 5.6s ease-in-out -1.2s infinite alternate; }
+  .l-sag   { transform-origin:83.6% 39.5%; filter:drop-shadow(0 0 3px #000); animation:sway 6.5s ease-in-out -3.1s infinite alternate-reverse; }
+  @keyframes spin  { to{transform:rotate(360deg)} }
+  @keyframes drift { from{translate:0 -3px} to{translate:0 3px} }
+  @keyframes sway  { from{transform:rotate(-2.2deg)} to{transform:rotate(2.2deg)} }
+  @keyframes glow  { 0%,100%{filter:drop-shadow(0 0 3px rgba(255,255,255,.06))} 50%{filter:drop-shadow(0 0 8px rgba(255,255,255,.2))} }
+
+  .caption { font-size:12px; margin-top:4px; opacity:0; transition:opacity 1.2s 1.3s; }
+  .hero.done .caption { opacity:1; }
+  .hint { position:absolute; bottom:7vh; font-size:13px; letter-spacing:.1em; color:var(--muted); opacity:0; animation:hintIn 1.2s 3s forwards; }
+  .hint span { animation:blink 2.6s ease-in-out infinite; }
+  .hint .t { display:none; }
+  @media (hover:none) { .hint .k { display:none; } .hint .t { display:inline; } }
+  .hero.done .hint { animation:none; opacity:0; }
+  @keyframes hintIn { to{opacity:1} }
+  @keyframes blink { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+  /* ---------- content + scroll reveal ---------- */
+  .content { max-width:940px; margin:0 auto; padding:30px 28px 90px; visibility:hidden; }
+  .content.show { visibility:visible; }
+  .reveal { opacity:0; transform:translateY(34px); filter:blur(6px);
+    transition:opacity 1.2s var(--ease) var(--d,0s), transform 1.2s var(--ease) var(--d,0s), filter 1.2s var(--ease) var(--d,0s), letter-spacing 1.8s var(--ease) var(--d,0s); }
+  .reveal.in { opacity:1; transform:none; filter:none; }
+
+  .cols { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-bottom:44px; }
+  .cols h3 { font-weight:400; font-size:19px; margin:0 0 12px; }
+  .cols p { font-size:13.5px; line-height:1.4; margin:0 0 20px; color:var(--muted); }
+  .cols .sig { color:var(--fg); }
+  .wide { font-size:14.5px; line-height:1.4; margin:0 0 80px; }
+  h2 { font-weight:400; font-size:19px; margin:0 0 40px; letter-spacing:.35em; }
+  h2.in { letter-spacing:.03em; }
+
+  .stage { display:grid; grid-template-columns:1fr 1fr 1.25fr; gap:30px; align-items:start; }
+  .stage ul { list-style:none; margin:0; padding:0; font-size:13.5px; line-height:1.2; }
+  .stage .dates li { padding-left:12px; line-height:1.3; }
+  .stage .left p { font-size:13.5px; line-height:1.25; margin:30px 0 0; }
+  .words { padding-left:70px !important; }
+
+  .box { border:1px solid var(--fg); outline:1px solid var(--fg); outline-offset:3px; padding:16px 18px; }
+  .box .top { display:flex; gap:16px; align-items:center; margin-bottom:14px; }
+  .box .num { border:1px solid var(--fg); width:54px; height:54px; display:grid; place-items:center; font-size:32px; flex:none; animation:flick 9s infinite; }
+  .box .top ul { font-size:13px; line-height:1.3; display:grid; grid-template-columns:1fr 1fr; gap:0 20px; }
+  .box p { margin:0; font-size:13.5px; line-height:1.3; }
+  @keyframes flick { 0%,91%,100%{opacity:1} 92%{opacity:.25} 93%{opacity:1} 94%{opacity:.5} 95%{opacity:1} }
+
+  /* ---------- form ---------- */
+  form { max-width:340px; margin:110px auto 0; padding:30px 26px 24px; border:1px solid var(--fg); outline:1px solid var(--fg); outline-offset:4px; font-size:14px; }
+  .gate-title { text-align:center; font-size:13px; letter-spacing:.32em; text-transform:uppercase; margin:0 0 10px; }
+  .gate-text { text-align:center; font-size:13.5px; line-height:1.5; color:var(--muted); margin:0 0 28px; }
+  .fld { display:block; margin-bottom:22px; }
+  .fld span { display:block; font-size:10.5px; letter-spacing:.2em; text-transform:uppercase; color:#8a8a8a; margin-bottom:2px; transition:color .3s; }
+  .fld:focus-within span { color:var(--fg); }
+  .fld input { width:100%; background:none; border:0; border-bottom:1px solid #4a4a4a; color:var(--fg); font:inherit; font-size:16px; padding:8px 0; outline:none; border-radius:0; transition:border-color .3s, box-shadow .3s; }
+  .fld input:focus { border-color:var(--fg); box-shadow:0 1px 0 var(--fg); }
+  .consent { display:flex; gap:10px; align-items:flex-start; font-size:11.5px; color:var(--muted); line-height:1.4; margin:4px 0 0; }
+  .consent input { margin-top:2px; accent-color:#fff; }
+  .consent a { color:var(--fg); }
+  .go { display:block; width:100%; margin-top:26px; padding:13px; background:none; border:1px solid var(--fg); color:var(--fg);
+        font:inherit; font-size:13px; letter-spacing:.3em; text-transform:uppercase; cursor:pointer; transition:background .35s, color .35s; }
+  .go:hover { background:var(--fg); color:#000; }
+  .go:disabled { opacity:.5; cursor:wait; }
+  .hp { position:absolute; left:-9999px; }
+  .status { text-align:center; font-size:13px; margin-top:16px; min-height:1.2em; }
+  button:focus-visible,a:focus-visible { outline:2px solid var(--fg); outline-offset:2px; }
+
+  @media (max-width:760px) {
+    .hero.done { --dw:min(84vw,300px); padding-top:64px; }
+    .hero h1 { font-size:30px; }
+    .cols,.stage { grid-template-columns:1fr; }
+    .cols { gap:8px; margin-bottom:30px; }
+    .cols h3 { font-size:21px; }
+    .cols p,.wide,.stage ul,.stage .left p,.box p { font-size:16px; line-height:1.45; }
+    .wide { margin-bottom:56px; }
+    .content { padding:20px 22px calc(60px + env(safe-area-inset-bottom)); }
+    .words { padding-left:12px !important; margin-top:10px !important; }
+    .stage { gap:26px; }
+    .box .top ul { font-size:15px; }
+    form { margin-top:70px; max-width:none; padding:26px 20px 22px; }
+    .go { padding:15px; font-size:14px; }
+    .consent { font-size:13px; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .grain,.l-ring,.l-snake,.l-at,.l-sol,.l-sag,.box .num,.hint span { animation:none; }
+    .logo { animation:none; opacity:1; }
+    .hero,.logo { transition-duration:.01s; }
+    .reveal { opacity:1; transform:none; filter:none; transition:none; }
+  }
+</style>
+</head>
+<body class="intro">
+<div class="grain" aria-hidden="true"></div>
+
+<header class="hero" id="hero" tabindex="0" aria-label="Press Enter or tap to enter">
+  <h1>71</h1>
+  <div class="logo"><div class="logo-in" id="logoIn">
+    <img class="l-ring"  src="logo-ring.png"  alt="">
+    <img class="l-snake" src="logo-snake.png" alt="">
+    <img class="l-at"    src="logo-at.png"    alt="">
+    <img class="l-sol"   src="logo-sol.png"   alt="">
+    <img class="l-sag"   src="logo-sag.png"   alt="">
+  </div></div>
+  <div class="caption">atelo</div>
+  <div class="hint"><span class="k">press Enter</span><span class="t">tap</span></div>
+</header>
+
+<main class="content" id="content">
+
+  <section class="cols" data-stagger="0.18">
+    <div>
+      <h3>vindicta sui</h3>
+      <p>Think about it: sometimes words fail and you just stare. When you have nothing left to say and no right to explain yourself, you just stay silent and watch. Experiencing this at least twice a week. Gaging in a way that brings a shattered forgiveness to the unforgivable. This is my greatest self-betrayal.</p>
+      <p class="sig">DURARE - circulus</p>
+    </div>
+    <div>
+      <h3>ATELO2B</h3>
+      <p>Sometimes I don't even fully grasp what I'm doing. I find myself walking down perfectly orchestrated paths without realizing it, guided by something far beyond my own control. 2B</p>
+      <p class="sig">by</p>
+    </div>
+    <div>
+      <h3>I SAW THE FUTURE</h3>
+      <p>There are things you wish you could undo, moments of impulse that can extinguish days of your life in an instant. I find myself wishing I had never done what I did. Yet now, I'll devote everything within my reach to making amends for it.</p>
+      <p>Perhaps I'll spend years, perhaps eve</p>
+    </div>
+  </section>
+
+  <p class="wide reveal">I've always trusted my own judgment, and more often than not, it has led me to the best outcomes. But this time, the price of my decision was the worst consequence I've ever had to bear. And I regret it.</p>
+
+  <h2 class="reveal">STAGE 2</h2>
+
+  <section class="stage" data-stagger="0.22">
+    <div class="left">
+      <ul class="dates" data-stagger="0.1">
+        <li>110701 -</li><li>25xxxx -</li><li>8.10.2026 -</li>
+        <li>9.10.2026 -</li><li>13.10.2026 -</li><li>10.11.2026 -</li>
+      </ul>
+      <p class="reveal">Until now, I kept telling myself to hold on, to endure. But I've never been this desperate. Right now, I don't know what you are doing, and honestly, I don't even know what I am doing anymore. I am helpless.</p>
+    </div>
+
+    <ul class="words" data-stagger="0.12">
+      <li>extravaganza</li><li>why?</li><li>forbear</li><li>you are fake</li><li>uncertainty</li>
+      <li>endure</li><li>resist</li><li>resist</li><li>quality</li><li>71</li><li>regretful</li>
+    </ul>
+
+    <div class="box">
+      <div class="top">
+        <div class="num">71</div>
+        <ul>
+          <li>Im not whole</li><li>Im not fun</li>
+          <li>Im not home</li><li>Im not free</li>
+          <li>Im not young</li><li>Im not clean</li>
+        </ul>
+      </div>
+      <p>And yes, right now I am staring at the very word I need. Minute after minute, we lock eyes. I don't want it to change, yet I am terrified. I want no answer back. I am ashamed of myself.</p>
+    </div>
+  </section>
+
+  <form id="form" class="reveal" action="https://formspree.io/f/xqpqzajg" method="POST" novalidate>
+    <input class="hp" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <p class="gate-title">to continue</p>
+    <p class="gate-text">leave your contact details to begin solving the puzzle.</p>
+    <label class="fld"><span>name</span><input type="text" name="name" autocomplete="name" required></label>
+    <label class="fld"><span>email</span><input type="email" name="email" autocomplete="email" required></label>
+    <label class="fld"><span>answer</span><input type="text" name="answer" autocomplete="off" required></label>
+    <label class="consent">
+      <input type="checkbox" name="consent" required>
+      <span>I agree to my answer and contact details being stored so the puzzle can continue, and to being contacted.
+        <a href="https://www.ateri.art/" target="_blank" rel="noopener">Privacy notice</a></span>
+    </label>
+    <button type="submit" id="send" class="go">submit</button>
+    <div class="status" id="status" role="status" aria-live="polite"></div>
+  </form>
+
+</main>
+
+<script>
+  if(location.search.includes('reset')){['v71','a71','t71'].forEach(k=>localStorage.removeItem(k))}
+{const st=localStorage.getItem('v71');if(st==='done')location.replace('regret.html');else if(st==='video')location.replace('step3.html')}
+const NEXT_PAGE='step2.html';
+const hero = document.getElementById('hero'), content = document.getElementById('content');
+  let entered = false;
+
+  // staggered children
+  document.querySelectorAll('[data-stagger]').forEach(g => {
+    const step = parseFloat(g.dataset.stagger);
+    [...g.children].forEach((c, i) => { c.classList.add('reveal'); c.style.setProperty('--d', (i * step) + 's'); });
+  });
+
+  function startReveal() {
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }), { threshold: .12, rootMargin: '0px 0px -6% 0px' });
+    document.querySelectorAll('.reveal').forEach(el => io.observe(el));
+  }
+
+  function enter() {
+    if (entered) return; entered = true;
+    hero.classList.add('done'); content.classList.add('show');
+    setTimeout(() => { document.body.classList.remove('intro'); startReveal(); }, 1500);
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') enter(); });
+  hero.addEventListener('click', enter);
+
+  // subtle parallax (desktop)
+  const logoIn = document.getElementById('logoIn');
+  if (matchMedia('(hover:hover)').matches) {
+    document.addEventListener('pointermove', e => {
+      const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
+      logoIn.style.transform = `translate3d(${x * -12}px, ${y * -9}px, 0)`;
+    });
+  }
+
+  // form
+  const form = document.getElementById('form'), status = document.getElementById('status'), send = document.getElementById('send');
+  form.addEventListener('submit', async e => {
+    e.preventDefault();
+    if (!form.checkValidity()) { form.reportValidity(); return; }
+    send.disabled = true; status.textContent = '...';
+    const token = Math.random().toString(36).slice(2, 8);
+    const fd = new FormData(form); fd.append('token', token); fd.append('step', '1');
+    try {
+      const r = await fetch(form.action, { method:'POST', body:fd, headers:{ 'Accept':'application/json' } });
+      if (!r.ok) throw new Error();
+      localStorage.setItem('t71', token);
+      form.reset(); status.textContent = 'received.';
+      setTimeout(() => { document.body.style.transition = 'opacity 1.4s'; document.body.style.opacity = 0; }, 900);
+      setTimeout(() => { location.href = NEXT_PAGE; }, 2500);
+    } catch (_) {
+      status.textContent = "couldn't send. try again."; send.disabled = false;
+    }
+  });
+</script>
+</body>
+</html>
