@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>71</title>
+<style>
+  :root { --bg:#000; --fg:#fff; --muted:#cfcfcf; --font:Georgia,"Times New Roman",serif; --ease:cubic-bezier(.2,.7,.2,1); --ez:cubic-bezier(.65,0,.25,1); }
+  * { box-sizing:border-box; }
+  html{scrollbar-width:none}
+  html::-webkit-scrollbar{display:none}
+  #dust{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:0}
+::selection{background:#fff;color:#000}
+  html,body { margin:0; background:var(--bg); color:var(--fg); font-family:var(--font); }
+  body.intro { overflow:hidden; }
+
+  /* ---------- atmosphere ---------- */
+  body::before { content:""; position:fixed; inset:0; pointer-events:none; z-index:40;
+    background:radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.7) 100%); }
+  .grain { position:fixed; inset:-50%; pointer-events:none; z-index:41; opacity:.07; animation:grain 1s steps(6) infinite;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+  @keyframes grain { 0%{transform:translate(0,0)} 20%{transform:translate(-3%,2%)} 40%{transform:translate(2%,-3%)} 60%{transform:translate(-2%,-1%)} 80%{transform:translate(3%,3%)} 100%{transform:translate(0,0)} }
+
+  /* ---------- hero ---------- */
+  .hero { height:100vh; height:100dvh; display:flex; flex-direction:column; align-items:center; justify-content:center; padding-top:0;
+          position:relative; z-index:1; cursor:pointer; overflow:hidden; transition:height 1.9s var(--ez), padding-top 1.9s var(--ez); }
+  .hero.done { --dw:min(88vw,380px); height:calc(var(--dw) + 150px); padding-top:50px; cursor:default; }
+  .hero h1 { position:absolute; top:22px; margin:0; font-weight:400; font-size:34px; opacity:0; transition:opacity 1.4s 1.6s; }
+  .hero.done h1 { opacity:1; }
+
+  .logo { position:relative; width:min(88vw,640px,80dvh); aspect-ratio:1; transition:width 1.9s var(--ez);
+          opacity:0; animation:appear 3s .3s var(--ease) forwards; }
+  .pulse { position:absolute; inset:6%; border-radius:50%; border:1px solid rgba(255,255,255,.75); opacity:0; pointer-events:none; }
+  .hero.done .pulse { animation:pulse 2.6s var(--ease) .1s; }
+  .hero.done .logo-in { animation:flash 1.8s ease-out; }
+  @keyframes pulse { from{transform:scale(.55); opacity:.8} to{transform:scale(1.55); opacity:0} }
+  @keyframes flash { 0%{filter:brightness(1)} 22%{filter:brightness(1.8)} 100%{filter:brightness(1)} }
+  .hero.done .logo { width:var(--dw); }
+  @keyframes appear { from{opacity:0; filter:blur(14px); transform:scale(.96)} to{opacity:1; filter:blur(0); transform:none} }
+  .logo-in { position:relative; width:100%; height:100%; transition:transform .8s ease-out; }
+  .logo-in img { position:absolute; inset:0; width:100%; height:100%; display:block; user-select:none; -webkit-user-drag:none; }
+  .l-ring  { animation:spin 150s linear infinite, drift 11s ease-in-out infinite alternate; }
+  .l-snake { animation:spin 110s linear infinite reverse, drift 8.5s ease-in-out -3s infinite alternate-reverse; }
+  .l-at    { animation:glow 9s ease-in-out infinite; }
+  .l-sol   { transform-origin:15.7% 39.6%; filter:drop-shadow(0 0 3px #000); animation:sway 5.6s ease-in-out -1.2s infinite alternate; }
+  .l-sag   { transform-origin:83.6% 39.5%; filter:drop-shadow(0 0 3px #000); animation:sway 6.5s ease-in-out -3.1s infinite alternate-reverse; }
+  @keyframes spin  { to{transform:rotate(360deg)} }
+  @keyframes drift { from{translate:0 -3px} to{translate:0 3px} }
+  @keyframes sway  { from{transform:rotate(-2.2deg)} to{transform:rotate(2.2deg)} }
+  @keyframes glow  { 0%,100%{filter:drop-shadow(0 0 3px rgba(255,255,255,.06))} 50%{filter:drop-shadow(0 0 8px rgba(255,255,255,.2))} }
+
+  .caption { font-size:12px; letter-spacing:.35em; padding-left:.35em; margin-top:4px; opacity:0; transition:opacity 1.4s 1.6s; }
+  .hero.done .caption { opacity:1; }
+  .hint { position:absolute; bottom:7vh; font-size:13px; letter-spacing:.1em; color:var(--muted); opacity:0; animation:hintIn 1.2s 3s forwards; }
+  .hint span { animation:blink 2.6s ease-in-out infinite; }
+  .hint .t { display:none; }
+  @media (hover:none) { .hint .k { display:none; } .hint .t { display:inline; } }
+  .hero.done .hint { animation:none; opacity:0; }
+  @keyframes hintIn { to{opacity:1} }
+  @keyframes blink { 0%,100%{opacity:.3} 50%{opacity:1} }
+
+  /* ---------- content + scroll reveal ---------- */
+  .content { position:relative; z-index:1; max-width:940px; margin:0 auto; padding:30px 28px 90px; visibility:hidden; }
+  .content.show { visibility:visible; }
+  .reveal { opacity:0; transform:translateY(34px); filter:blur(6px);
+    transition:opacity 1.2s var(--ease) var(--d,0s), transform 1.2s var(--ease) var(--d,0s), filter 1.2s var(--ease) var(--d,0s), letter-spacing 1.8s var(--ease) var(--d,0s); }
+  .reveal.in { opacity:1; transform:none; filter:none; }
+
+  .cols { display:grid; grid-template-columns:repeat(3,1fr); gap:28px; margin-bottom:44px; }
+  .cols h3 { font-weight:400; font-size:19px; margin:0 0 12px; }
+  .cols p { font-size:13.5px; line-height:1.4; margin:0 0 20px; color:var(--muted); }
+  .cols .sig { color:var(--fg); }
+  .wide { font-size:14.5px; line-height:1.4; margin:0 0 80px; }
+  h2 { font-weight:400; font-size:19px; margin:0 0 40px; letter-spacing:.35em; }
+  h2.in { letter-spacing:.03em; }
+  h2 { position:relative; padding-bottom:14px; }
+  h2::after { content:""; position:absolute; left:0; bottom:0; height:1px; width:0; background:#fff; transition:width 1.8s var(--ease) .5s; }
+  h2.in::after { width:64px; }
+
+  .stage { display:grid; grid-template-columns:1fr 1fr 1.25fr; gap:30px; align-items:start; }
+  .stage ul { list-style:none; margin:0; padding:0; font-size:13.5px; line-height:1.2; }
+  .stage .dates li { padding-left:12px; line-height:1.3; }
+  .stage .left p { font-size:13.5px; line-height:1.25; margin:30px 0 0; }
+  .words { padding-left:70px !important; }
+
+  .box { border:1px solid var(--fg); outline:1px solid var(--fg); outline-offset:3px; padding:16px 18px; }
+  .box .top { display:flex; gap:16px; align-items:center; margin-bottom:14px; }
+  .box .num { border:1px solid var(--fg); width:54px; height:54px; display:grid; place-items:center; font-size:32px; flex:none; animation:flick 9s infinite; }
+  .box .top ul { font-size:13px; line-height:1.3; display:grid; grid-template-columns:1fr 1fr; gap:0 20px; }
+  .box p { margin:0; font-size:13.5px; line-height:1.3; }
+  @keyframes flick { 0%,91%,100%{opacity:1} 92%{opacity:.25} 93%{opacity:1} 94%{opacity:.5} 95%{opacity:1} }
+
+  /* ---------- scroll sonu: isim kapisi ---------- */
+  .runway { height:110vh; }
+  .cue { width:1px; height:70px; margin:70px auto 0; background:linear-gradient(#fff,transparent); opacity:.5; animation:cue 2.8s ease-in-out infinite; }
+  @keyframes cue { 0%,100%{opacity:.15; transform:scaleY(.6)} 50%{opacity:.6; transform:scaleY(1)} }
+  .ask { position:fixed; inset:0; z-index:30; display:flex; flex-direction:column; align-items:center; justify-content:center;
+         padding:24px; text-align:center; opacity:0; pointer-events:none; will-change:opacity,transform; }
+  .ask::before { content:""; position:absolute; width:min(120vw,720px); aspect-ratio:1; border-radius:50%; pointer-events:none;
+         background:radial-gradient(closest-side,rgba(255,255,255,.08),transparent); animation:breathe 7s ease-in-out infinite; }
+  @keyframes breathe { 0%,100%{transform:scale(.88); opacity:.55} 50%{transform:scale(1.08); opacity:1} }
+  .ask > * { position:relative; }
+  .ask-q { font-size:clamp(22px,5.8vw,30px); line-height:1.4; margin:0 0 34px; }
+  .ask-q .w { display:inline-block; opacity:0; transform:translateY(14px); filter:blur(6px);
+         transition:opacity 1.3s var(--ease), transform 1.3s var(--ease), filter 1.3s var(--ease); transition-delay:calc(var(--i) * .24s); }
+  .ask.on .ask-q .w { opacity:1; transform:none; filter:none; }
+  .field { position:relative; width:min(80vw,320px); margin:0 auto; }
+  #nm { width:100%; background:none; border:0; border-bottom:1px solid #333; color:var(--fg); font:inherit; font-size:24px;
+        text-align:center; padding:8px 0; outline:none; caret-color:#fff; border-radius:0; }
+  .field::after { content:""; position:absolute; left:0; right:0; bottom:0; height:1px; background:var(--fg); transform:scaleX(0); transition:transform .8s var(--ease); }
+  .field:focus-within::after { transform:scaleX(1); }
+  .go { display:block; margin:34px auto 0; padding:13px 38px; background:none; border:1px solid #333; color:#555; font:inherit; font-size:13px;
+        letter-spacing:.32em; padding-left:calc(38px + .32em); text-transform:uppercase; cursor:not-allowed;
+        transition:color .6s, border-color .6s, background .4s, transform .3s; }
+  .go:not(:disabled) { color:var(--fg); border-color:var(--fg); cursor:pointer; }
+  .go:not(:disabled):hover { background:var(--fg); color:#000; }
+  .go:not(:disabled):active { transform:scale(.96); }
+  .ask-note { margin:34px 0 0; font-size:12px; letter-spacing:.06em; color:#777; opacity:0; transition:opacity 2s 1.4s; }
+  .ask.on .ask-note { opacity:1; }
+  .status { min-height:1.3em; margin-top:16px; font-size:13px; color:var(--muted); }
+  .hp { position:absolute; left:-9999px; }
+  button:focus-visible,a:focus-visible { outline:2px solid var(--fg); outline-offset:2px; }
+
+  /* --- ek animasyonlar --- */
+  #prog { position:fixed; top:0; left:0; height:1px; width:0; background:#fff; opacity:.45; z-index:35; pointer-events:none; }
+  #lite { position:fixed; inset:0; z-index:2; pointer-events:none; opacity:0; transition:opacity 1.5s;
+          background:radial-gradient(circle 300px at var(--mx,50%) var(--my,50%), rgba(255,255,255,.05), transparent); }
+  body.lit #lite { opacity:1; }
+  .wr .wd { display:inline-block; opacity:0; filter:blur(5px); transform:translateY(6px);
+            transition:opacity .9s var(--ease), filter .9s var(--ease), transform .9s var(--ease); transition-delay:calc(var(--i) * 55ms); }
+  .wr.in .wd { opacity:1; filter:none; transform:none; }
+  @media (max-width:760px) {
+    .hero.done { --dw:min(84vw,300px); }
+    .hero h1 { font-size:30px; }
+    .cols,.stage { grid-template-columns:1fr; }
+    .cols { gap:8px; margin-bottom:30px; }
+    .cols h3 { font-size:21px; }
+    .cols p,.wide,.stage ul,.stage .left p,.box p { font-size:16px; line-height:1.45; }
+    .wide { margin-bottom:56px; }
+    .content { padding:20px 22px calc(60px + env(safe-area-inset-bottom)); }
+    .words { padding-left:12px !important; margin-top:10px !important; }
+    .stage { gap:26px; }
+    .box .top ul { font-size:15px; }
+  }
+  @media (prefers-reduced-motion:reduce) {
+    .grain,.l-ring,.l-snake,.l-at,.l-sol,.l-sag,.box .num,.hint span { animation:none; }
+    .logo { animation:none; opacity:1; }
+    .hero,.logo { transition-duration:.01s; }
+    .reveal { opacity:1; transform:none; filter:none; transition:none; }
+  }
+</style>
+</head>
+<body class="intro">
+<div class="grain" aria-hidden="true"></div>
+<div id="prog" aria-hidden="true"></div><div id="lite" aria-hidden="true"></div>
+
+<header class="hero" id="hero" tabindex="0" aria-label="Press Enter or tap to enter">
+  <h1>71</h1>
+  <div class="logo"><span class="pulse"></span><div class="logo-in" id="logoIn">
+    <img class="l-ring"  src="logo-ring.png"  alt="">
+    <img class="l-snake" src="logo-snake.png" alt="">
+    <img class="l-at"    src="logo-at.png"    alt="">
+    <img class="l-sol"   src="logo-sol.png"   alt="">
+    <img class="l-sag"   src="logo-sag.png"   alt="">
+  </div></div>
+  <div class="caption">atelo</div>
+  <div class="hint"><span class="k">press Enter</span><span class="t">tap</span></div>
+</header>
+
+<main class="content" id="content">
+
+  <section class="cols" data-stagger="0.18">
+    <div>
+      <h3>vindicta sui</h3>
+      <p>Think about it: sometimes words fail and you just stare. When you have nothing left to say and no right to explain yourself, you just stay silent and watch. Experiencing this at least twice a week. Gaging in a way that brings a shattered forgiveness to the unforgivable. This is my greatest self-betrayal.</p>
+      <p class="sig">DURARE - circulus</p>
+    </div>
+    <div>
+      <h3>ATELO2B</h3>
+      <p>Sometimes I don't even fully grasp what I'm doing. I find myself walking down perfectly orchestrated paths without realizing it, guided by something far beyond my own control. 2B</p>
+      <p class="sig">by</p>
+    </div>
+    <div>
+      <h3>I SAW THE FUTURE</h3>
+      <p>There are things you wish you could undo, moments of impulse that can extinguish days of your life in an instant. I find myself wishing I had never done what I did. Yet now, I'll devote everything within my reach to making amends for it.</p>
+      <p>Perhaps I'll spend years, perhaps eve</p>
+    </div>
+  </section>
+
+  <p class="wide reveal">I've always trusted my own judgment, and more often than not, it has led me to the best outcomes. But this time, the price of my decision was the worst consequence I've ever had to bear. And I regret it.</p>
+
+  <h2 class="reveal">STAGE 1</h2>
+
+  <section class="stage" data-stagger="0.22">
+    <div class="left">
+      <ul class="dates" data-stagger="0.1">
+        <li>110701 -</li><li>25xxxx -</li><li>8.10.2026 -</li>
+        <li>9.10.2026 -</li><li>13.10.2026 -</li><li>10.11.2026 -</li>
+      </ul>
+      <p class="reveal">Until now, I kept telling myself to hold on, to endure. But I've never been this desperate. Right now, I don't know what you are doing, and honestly, I don't even know what I am doing anymore. I am helpless.</p>
+    </div>
+
+    <ul class="words" data-stagger="0.12">
+      <li>extravaganza</li><li>why?</li><li>forbear</li><li>you are fake</li><li>uncertainty</li>
+      <li>endure</li><li>resist</li><li>resist</li><li>quality</li><li>71</li><li>regretful</li>
+    </ul>
+
+    <div class="box">
+      <div class="top">
+        <div class="num">71</div>
+        <ul>
+          <li>Im not whole</li><li>Im not fun</li>
+          <li>Im not home</li><li>Im not free</li>
+          <li>Im not young</li><li>Im not clean</li>
+        </ul>
+      </div>
+      <p>And yes, right now I am staring at the very word I need. Minute after minute, we lock eyes. I don't want it to change, yet I am terrified. I want no answer back. I am ashamed of myself.</p>
+    </div>
+  </section>
+
+  <div class="runway" aria-hidden="true"><div class="cue"></div></div>
+
+</main>
+
+<canvas id="dust" aria-hidden="true"></canvas>
+<div class="ask" id="ask">
+  <p class="ask-q"><span class="w" style="--i:0">Now,</span> <span class="w" style="--i:1">tell</span> <span class="w" style="--i:2">me</span> <span class="w" style="--i:3">your</span> <span class="w" style="--i:4">name.</span></p>
+  <form id="nform" autocomplete="off" novalidate>
+    <input class="hp" type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true">
+    <div class="field"><input id="nm" type="text" name="name" autocomplete="given-name" autocapitalize="words" spellcheck="false" enterkeyhint="go" aria-label="your name" required></div>
+    <button class="go" id="go" type="submit" disabled>continue</button>
+  </form>
+  <div class="status" id="status" role="status" aria-live="polite"></div>
+  <p class="ask-note">what you write comes to me.</p>
+</div>
+
+<script>
+const LS={
+  g(k){try{return localStorage.getItem(k)}catch(e){try{return JSON.parse(window.name||'{}')[k]||null}catch(_){return null}}},
+  s(k,v){try{localStorage.setItem(k,v)}catch(e){try{const o=JSON.parse(window.name||'{}');o[k]=v;window.name=JSON.stringify(o)}catch(_){}}},
+  d(k){try{localStorage.removeItem(k)}catch(e){try{const o=JSON.parse(window.name||'{}');delete o[k];window.name=JSON.stringify(o)}catch(_){}}}};
+  if(location.search.includes('reset')){['v71','a71','t71'].forEach(k=>LS.d(k))}
+{const st=LS.g('v71');if(st==='done')location.replace('regret.html');else if(st==='video')location.replace('step3.html')}
+const NEXT_PAGE='step2.html';
+const hero = document.getElementById('hero'), content = document.getElementById('content');
+  let entered = false;
+
+  // paragraflar kelime kelime beliresin
+  document.querySelectorAll('.wide,.stage .left p,.box p').forEach(p => {
+    p.classList.add('wr');
+    p.innerHTML = p.textContent.trim().split(/\s+/).map((w, i) => `<span class="wd" style="--i:${Math.min(i, 60)}">${w}</span>`).join(' ');
+  });
+
+  // staggered children
+  document.querySelectorAll('[data-stagger]').forEach(g => {
+    const step = parseFloat(g.dataset.stagger);
+    [...g.children].forEach((c, i) => { c.classList.add('reveal'); c.style.setProperty('--d', (i * step) + 's'); });
+  });
+
+  function startReveal() {
+    const io = new IntersectionObserver(es => es.forEach(e => {
+      if (e.isIntersecting) { e.target.classList.add('in'); io.unobserve(e.target); }
+    }), { threshold: .12, rootMargin: '0px 0px -6% 0px' });
+    document.querySelectorAll('.reveal,.wr').forEach(el => io.observe(el));
+  }
+
+  function enter() {
+    if (entered) return; entered = true;
+    hero.classList.add('done'); content.classList.add('show');
+    setTimeout(() => { document.body.classList.remove('intro'); startReveal(); }, 1800);
+  }
+  document.addEventListener('keydown', e => { if (e.key === 'Enter') enter(); });
+  hero.addEventListener('click', enter);
+
+  // subtle parallax (desktop)
+  const logoIn = document.getElementById('logoIn');
+  if (matchMedia('(hover:hover)').matches) {
+    document.addEventListener('pointermove', e => {
+      const x = e.clientX / innerWidth - .5, y = e.clientY / innerHeight - .5;
+      document.body.classList.add('lit'); document.documentElement.style.setProperty('--mx', e.clientX + 'px'); document.documentElement.style.setProperty('--my', e.clientY + 'px');
+      logoIn.style.transform = `translate3d(${x * -12}px, ${y * -9}px, 0)`;
+    });
+  }
+
+  const prog = document.getElementById('prog');
+  addEventListener('scroll', () => { const m = document.documentElement.scrollHeight - innerHeight; prog.style.width = (m > 0 ? scrollY / m * 100 : 0) + '%'; }, { passive:true });
+
+  // ----- scroll sonu: ustteki her sey kararir, isim sorusu yukselir -----
+  const ask = document.getElementById('ask'), nm = document.getElementById('nm');
+  let locked = false, ticking = false;
+  function onScroll() {
+    if (locked || !entered || document.body.classList.contains('intro')) return;
+    const H = innerHeight, max = document.documentElement.scrollHeight - H;
+    const p = Math.min(1, Math.max(0, (scrollY - (max - H * .95)) / (H * .8)));
+    content.style.opacity = 1 - p; hero.style.opacity = 1 - p;
+    ask.style.opacity = p; ask.style.transform = `translateY(${(1 - p) * 48}px)`;
+    ask.style.pointerEvents = p > .6 ? 'auto' : 'none'; ask.classList.toggle('on', p > .4);
+    if (p >= .995) {                         // kilitle: klavye acilinca bozulmasin
+      locked = true; document.body.style.overflow = 'hidden'; content.style.visibility = 'hidden';
+      if (matchMedia('(hover:hover)').matches) nm.focus({ preventScroll: true });
+    }
+  }
+  addEventListener('scroll', () => { if (!ticking) { ticking = true; requestAnimationFrame(() => { onScroll(); ticking = false; }); } }, { passive:true });
+
+  // ----- isim -----
+  const ONLY_NAME = '';   // bos = her isim kabul. Sadece Tugba girsin istersen: 'tugba' (buyuk/kucuk harf, ğ/ü fark etmez, "Tuğba Yilmaz" da gecer)
+  const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z]/g, '');
+  const nform = document.getElementById('nform'), go = document.getElementById('go'), stat = document.getElementById('status');
+  nm.addEventListener('input', () => { go.disabled = nm.value.trim().length === 0; });
+  nform.addEventListener('submit', async e => {
+    e.preventDefault();
+    const name = nm.value.trim(); if (!name) return;
+    if (ONLY_NAME && !norm(name).includes(norm(ONLY_NAME))) { stat.textContent = "that isn't what I was looking for."; return; }
+    go.disabled = true; nm.disabled = true; stat.textContent = '';
+    const token = Math.random().toString(36).slice(2, 8);
+    const fd = new FormData(nform); fd.append('token', token); fd.append('step', '1');
+    try {
+      const r = await fetch('https://formspree.io/f/xqpqzajg', { method:'POST', body:fd, headers:{ 'Accept':'application/json' } });
+      if (!r.ok) throw new Error();
+      LS.s('t71', token);
+      ask.style.transition = 'opacity 1.5s'; ask.style.opacity = 0;
+      setTimeout(() => { location.href = NEXT_PAGE; }, 1800);
+    } catch (_) {
+      stat.textContent = "couldn't send. try again."; go.disabled = false; nm.disabled = false;
+    }
+  });
+</script>
+<script>
+(()=>{if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
+const c=document.getElementById('dust'),x=c.getContext('2d');let W,H;const P=[];
+const rs=()=>{W=c.width=innerWidth;H=c.height=innerHeight};rs();addEventListener('resize',rs);
+const N=Math.min(55,Math.floor(innerWidth/16));
+for(let i=0;i<N;i++)P.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+.3,v:Math.random()*.22+.05,a:Math.random()*.35+.1,s:Math.random()*6.28});
+(function f(t){x.clearRect(0,0,W,H);x.fillStyle='#fff';
+ for(const p of P){p.y-=p.v;p.x+=Math.sin(t/3200+p.s)*.15;if(p.y<-5){p.y=H+5;p.x=Math.random()*W}
+  x.globalAlpha=p.a*(.55+.45*Math.sin(t/1300+p.s));x.beginPath();x.arc(p.x,p.y,p.r,0,6.283);x.fill()}
+ requestAnimationFrame(f)})(0)})();
+</script>
+</body>
+</html>
