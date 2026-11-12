@@ -45,51 +45,93 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <div id="bk"></div>
 
 <script>
-/* Kalp atisi motoru: step2 ve step3 ortak kullanir. Ses kodla uretilir, dosya yok. */
+/* Kalp atisi motoru: step2 ve step3 ortak kullanir. Ses kodla uretilir, dosya yok.
+   v3: davul degil, gogus kafesinden gelen boguk kalp sesi. "lub" (S1) ve "dub" (S2) ikiser valf kapanisindan olusur,
+   perde dususu yok denecek kadar az, yumusak saldiri, gurultu dokusu ve alcak geciren filtre ile. */
 (()=>{
-const W=window;let ac,bus,master,nb,timer,run=false,pu;
+const W=window;let ac,bus,master,nb,timer,run=false,pu,sat,muted=false,mul=1,gm=1,cur='normal',lastBeat=0,moodT=0;
 W.HR_MS=()=>1000; W.HEART_AUTO=false;
 function init(){
-  ac=new (W.AudioContext||W.webkitAudioContext)();
-  master=ac.createGain();master.gain.value=.6;master.connect(ac.destination);
-  bus=ac.createGain();const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=520;bus.connect(lp);lp.connect(master);
-  const L=Math.floor(ac.sampleRate*.7),ir=ac.createBuffer(2,L,ac.sampleRate);          // kisa oda yankisi
-  for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<L;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/L,2.6)}
-  const cv=ac.createConvolver();cv.buffer=ir;const wet=ac.createGain();wet.gain.value=.22;bus.connect(cv);cv.connect(wet);wet.connect(master);
+  try{if(navigator.audioSession)navigator.audioSession.type='playback'}catch(e){}   // iOS: sessiz modda da cal
+  ac=new (W.AudioContext||W.webkitAudioContext)({latencyHint:'interactive'});
+  master=ac.createGain();master.gain.value=1;
+  const comp=ac.createDynamicsCompressor();comp.threshold.value=-16;comp.knee.value=14;comp.ratio.value=4;comp.attack.value=.006;comp.release.value=.2;
+  master.connect(comp);comp.connect(ac.destination);
+  bus=ac.createGain();bus.gain.value=1;
+  const lp=ac.createBiquadFilter();lp.type='lowpass';lp.frequency.value=560;lp.Q.value=.6;      // gogus kafesi: ust sesleri yutar
+  const pk=ac.createBiquadFilter();pk.type='peaking';pk.frequency.value=150;pk.Q.value=.8;pk.gain.value=6;   // govde rezonansi (kucuk hoparlorde duyulan kisim)
+  bus.connect(lp);lp.connect(pk);pk.connect(master);
+  const L=Math.floor(ac.sampleRate*.45),ir=ac.createBuffer(2,L,ac.sampleRate);          // cok kisa, mat oda
+  for(let c=0;c<2;c++){const d=ir.getChannelData(c);for(let i=0;i<L;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/L,3.2)}
+  const cv=ac.createConvolver();cv.buffer=ir;const wet=ac.createGain();wet.gain.value=.12;pk.connect(cv);cv.connect(wet);wet.connect(master);
   nb=ac.createBuffer(1,Math.floor(ac.sampleRate*.5),ac.sampleRate);const d=nb.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;
+  sat=ac.createWaveShaper();const n=1024,cu=new Float32Array(n);                         // hafif isinma: alcak sesin ust harmoniklerini uretir
+  for(let i=0;i<n;i++){const x=i*2/(n-1)-1;cu[i]=Math.tanh(x*1.5)/Math.tanh(1.5)}
+  sat.curve=cu;sat.oversample='2x';sat.connect(bus);
 }
-/* tek bir kapakcik sesi: alcalan alcak sinus + filtrelenmis gurultu = "tok" */
-function thud(at,f0,f1,dur,g,cut){
-  const t=ac.currentTime+at,o=ac.createOscillator(),og=ac.createGain();
-  o.type='sine';o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(f1,t+dur);
-  og.gain.setValueAtTime(.0001,t);og.gain.linearRampToValueAtTime(g,t+.012);og.gain.exponentialRampToValueAtTime(.0001,t+dur);
-  o.connect(og);og.connect(bus);o.start(t);o.stop(t+dur+.05);
-  const s=ac.createBufferSource(),f=ac.createBiquadFilter(),ng=ac.createGain();
-  s.buffer=nb;f.type='lowpass';f.frequency.value=cut;f.Q.value=.7;
-  ng.gain.setValueAtTime(.0001,t);ng.gain.linearRampToValueAtTime(g*.9,t+.008);ng.gain.exponentialRampToValueAtTime(.0001,t+dur*.8);
-  s.connect(f);f.connect(ng);ng.connect(bus);s.start(t);s.stop(t+dur);
+/* tek bir valf kapanisi: yumusak baslayan govde + oktav ustu + bandpass gurultu (kan/doku "fus"u) */
+function comp1(at,f,fEnd,dur,att,g,nHz){
+  const G=Math.min(1.25,g*5),t=ac.currentTime+at;
+  const o=ac.createOscillator(),og=ac.createGain();
+  o.type='sine';o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(fEnd,t+dur);   // perde dususu kucuk: davul gibi olmasin
+  og.gain.setValueAtTime(.0001,t);og.gain.linearRampToValueAtTime(G,t+att);og.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  o.connect(og);og.connect(sat);o.start(t);o.stop(t+dur+.05);
+  const o2=ac.createOscillator(),g2=ac.createGain();
+  o2.type='sine';o2.frequency.setValueAtTime(f*2,t);o2.frequency.exponentialRampToValueAtTime(fEnd*2,t+dur);
+  g2.gain.setValueAtTime(.0001,t);g2.gain.linearRampToValueAtTime(G*.45,t+att*1.2);g2.gain.exponentialRampToValueAtTime(.0001,t+dur*.7);
+  o2.connect(g2);g2.connect(sat);o2.start(t);o2.stop(t+dur+.05);
+  const s=ac.createBufferSource(),f2=ac.createBiquadFilter(),ng=ac.createGain();
+  s.buffer=nb;f2.type='bandpass';f2.frequency.value=nHz;f2.Q.value=1.1;
+  ng.gain.setValueAtTime(.0001,t);ng.gain.linearRampToValueAtTime(G*.6,t+att);ng.gain.exponentialRampToValueAtTime(.0001,t+dur*.85);
+  s.connect(f2);f2.connect(ng);ng.connect(bus);s.start(t,Math.random()*.2,dur+.05);
 }
+const S1=(at,g)=>{comp1(at,66,52,.18,.020,g,130);comp1(at+.024,80,58,.14,.016,g*.62,190)};    // "lub": alcak, uzun, iki parca
+const S2=(at,g)=>{comp1(at,96,76,.12,.012,g*.78,210);comp1(at+.017,118,88,.09,.010,g*.5,270)};  // "dub": biraz tiz, kisa, iki parca
 function pulse(){                                   // her atista ekranin ortasi cok hafif parlar
   if(!pu){pu=document.createElement('div');pu.style.cssText='position:fixed;inset:0;pointer-events:none;z-index:39;opacity:0;background:radial-gradient(circle at 50% 50%,rgba(255,255,255,.1),transparent 62%)';document.body.appendChild(pu)}
-  pu.animate([{opacity:0},{opacity:1,offset:.1},{opacity:0,offset:.35},{opacity:.55,offset:.5},{opacity:0}],{duration:850});
+  if(pu._a)pu._a.cancel();
+  pu._a=pu.animate([{opacity:0},{opacity:1,offset:.1},{opacity:0,offset:.35},{opacity:.55,offset:.5},{opacity:0}],{duration:850});
 }
-W.lub=g=>{if(ac)thud(0,72,38,.2,g,230)};                                  // tek vurus (dokunuslar icin)
-W.thump=(g=.13)=>{if(!ac)return;const j=1+(Math.random()-.5)*.14;          // lub-dub
-  thud(0,72,38,.2,g*j,230);thud(.27+(Math.random()-.5)*.02,96,50,.15,g*.7*j,300);pulse()};
-W.tone=(f,d,g,type='sine',at=0)=>{if(!ac)return;const t=ac.currentTime+at,o=ac.createOscillator(),v=ac.createGain();
+W.lub=g=>{if(!muted&&ac&&ac.state==='running')S1(0,g)};                                          // tek vurus (dokunuslar icin)
+W.thump=(g=.13,gap=.31)=>{if(muted||!ac||ac.state!=='running')return;const j=1+(Math.random()-.5)*.16;  // lub-dub
+  S1(0,g*j);S2(gap+(Math.random()-.5)*.02,g*.8*j);pulse()};
+W.tone=(f,d,g,type='sine',at=0)=>{if(!ac||ac.state!=='running')return;const t=ac.currentTime+at,o=ac.createOscillator(),v=ac.createGain();
   o.type=type;o.frequency.setValueAtTime(f,t);o.frequency.exponentialRampToValueAtTime(f*.6,t+d);
   v.gain.setValueAtTime(g,t);v.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(v);v.connect(master);o.start(t);o.stop(t+d+.02)};
-W.tick=()=>W.tone(1500,.03,.025,'triangle');
-W.blip=()=>W.tone(520+Math.random()*60,.05,.012,'triangle');
+/* mekanik carkin "tik" sesi: kisa gurultu patlamasi + kucuk govde, her seferinde hafif farkli */
+W.tick=()=>{if(!ac||ac.state!=='running')return;const t=ac.currentTime,j=1+(Math.random()-.5)*.25;
+  const s=ac.createBufferSource(),f=ac.createBiquadFilter(),g=ac.createGain();
+  s.buffer=nb;f.type='bandpass';f.frequency.value=2600*j;f.Q.value=1.4;
+  g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(.32,t+.001);g.gain.exponentialRampToValueAtTime(.0001,t+.022);
+  s.connect(f);f.connect(g);g.connect(master);s.start(t,Math.random()*.3,.04);
+  const o=ac.createOscillator(),og=ac.createGain();o.type='sine';o.frequency.setValueAtTime(240*j,t);o.frequency.exponentialRampToValueAtTime(110,t+.05);
+  og.gain.setValueAtTime(.0001,t);og.gain.linearRampToValueAtTime(.16,t+.002);og.gain.exponentialRampToValueAtTime(.0001,t+.06);
+  o.connect(og);og.connect(master);o.start(t);o.stop(t+.08)};
+W.blip=()=>W.tone(520+Math.random()*60,.05,.02,'triangle');
 W.vib=p=>navigator.vibrate&&navigator.vibrate(p);
-function loop(){if(!run)return;W.thump(.13);W.vib([30,140,20]);timer=setTimeout(loop,W.HR_MS()*(1+(Math.random()-.5)*.08))}
-W.startHeart=()=>{if(run||!ac)return;run=true;loop()};
+function loop(){if(!run)return;lastBeat=performance.now();
+  if(ac&&ac.state==='suspended')ac.resume();
+  if(!muted&&ac&&ac.state==='running'){W.thump(.13*gm,.31*Math.min(1,.6+.4*mul));W.vib([30,140,20])}
+  timer=setTimeout(loop,W.HR_MS()*mul*(1+(Math.random()-.5)*.08))}
+W.startHeart=()=>{if(run||!ac||muted)return;run=true;loop()};
 W.stopHeart=()=>{run=false;clearTimeout(timer)};
+/* kalbin ruh hali: 'fast' hizli+guclu, 'slow' yavas+zayif, 'off' tamamen sessiz (parlama da yok), 'normal' eski haline */
+W.heartMood=m=>{clearTimeout(moodT);if(m==='off')applyMood(m);else moodT=setTimeout(()=>applyMood(m),90)};
+function applyMood(m){if(m===cur)return;cur=m;
+  if(m==='off'){muted=true;W.stopHeart();return}
+  const was=muted;muted=false;mul=m==='fast'?.46:m==='slow'?1.9:1;gm=m==='fast'?1.25:m==='slow'?.7:1;
+  if(run){clearTimeout(timer);const left=W.HR_MS()*mul-(performance.now()-lastBeat);timer=setTimeout(loop,was?0:Math.max(320,left))}
+  else if(W.HEART_AUTO&&ac)W.startHeart()}
 W.fadeHeart=(s=2)=>{if(!ac)return;master.gain.cancelScheduledValues(ac.currentTime);master.gain.setValueAtTime(master.gain.value,ac.currentTime);
   master.gain.linearRampToValueAtTime(0,ac.currentTime+s);setTimeout(W.stopHeart,s*1000)};
-function unlock(){try{if(!ac)init();else if(ac.state==='suspended')ac.resume();if(W.HEART_AUTO)W.startHeart()}catch(e){}}
-['lub','thump','tone','tick','blip','startHeart','fadeHeart'].forEach(k=>{const f=W[k];W[k]=(...a)=>{try{return f(...a)}catch(e){}}});   // ses asla sayfayi bozmasin
-['pointerup','touchend','click','keydown'].forEach(ev=>addEventListener(ev,unlock,{passive:true}));
+function unlock(){try{
+  if(!ac)init();
+  if(ac.state!=='running'){const p=ac.resume();if(p&&p.then)p.then(()=>{if(W.HEART_AUTO)W.startHeart()},()=>{})}
+  if(W.HEART_AUTO)W.startHeart()}catch(e){}}
+['lub','thump','tone','tick','blip','startHeart','fadeHeart','heartMood'].forEach(k=>{const f=W[k];W[k]=(...a)=>{try{return f(...a)}catch(e){}}});   // ses asla sayfayi bozmasin
+['pointerdown','pointerup','touchstart','touchend','click','keydown'].forEach(ev=>addEventListener(ev,unlock,{passive:true}));
+document.addEventListener('visibilitychange',()=>{if(!document.hidden&&ac&&ac.state==='suspended')ac.resume().catch(()=>{})});
+setTimeout(()=>{try{if(!ac)init()}catch(e){}},0);          // tarayici izin veriyorsa dokunmadan hemen hazir olsun
 })();
 
 </script>
@@ -113,7 +155,8 @@ const show=id=>document.querySelectorAll('.scene').forEach(s=>s.classList.toggle
 const nd=s=>(s||'').split('.').map(Number).join('.'), nw=s=>(s||'').toLowerCase().replace(/[^a-z0-9]/g,'');
 async function type(el,txt,sp=70){el.textContent='';for(const c of txt){el.textContent+=c;await wait(sp+(',.'.includes(c)?300:0))}}
 
-'UAEONRST'.split('').forEach((c,i)=>{const b=document.createElement('button');b.textContent=c;b.style.setProperty('--i',i);b.onclick=()=>pick(b,c);$('#keys').appendChild(b)});
+'UAEONRST'.split('').forEach((c,i)=>{const b=document.createElement('button');b.textContent=c;b.style.setProperty('--i',i);b.onclick=()=>pick(b,c);b.addEventListener('pointerenter',ev=>{if(ev.pointerType==='mouse')heartMood(c==='U'?'fast':'slow')});$('#keys').appendChild(b)});
+$('#keys').addEventListener('pointerleave',ev=>{if(ev.pointerType==='mouse')heartMood('normal')});
 
 (async()=>{
   if(VID){await videoScene();return}
@@ -126,8 +169,8 @@ async function type(el,txt,sp=70){el.textContent='';for(const c of txt){el.textC
 })();
 
 let pend=null,done=false;
-function pick(b,c){if(done)return;pend=c;$('#ch').textContent=c;$('#f').style.display='none';const k=$('#ask');k.style.display='block';requestAnimationFrame(()=>requestAnimationFrame(()=>k.classList.add('on')))}
-$('#no').onclick=()=>{if(done)return;const k=$('#ask');k.classList.remove('on');k.style.display='none';$('#f').style.display='';pend=null};
+function pick(b,c){if(done)return;pend=c;heartMood(c==='U'?'fast':'off');$('#ch').textContent=c;$('#f').style.display='none';const k=$('#ask');k.style.display='block';requestAnimationFrame(()=>requestAnimationFrame(()=>k.classList.add('on')))}
+$('#no').onclick=()=>{if(done)return;heartMood('normal');const k=$('#ask');k.classList.remove('on');k.style.display='none';$('#f').style.display='';pend=null};
 $('#yes').onclick=()=>{if(done||!pend)return;done=true;$('#ask').classList.remove('on');$('#foot').classList.remove('on');lock(pend)};
 
 async function videoScene(){          // videodan once: yavas beliren iki satir, sonra video
@@ -146,9 +189,9 @@ async function lock(c){
 (()=>{if(matchMedia('(prefers-reduced-motion:reduce)').matches)return;
 const c=document.getElementById('dust'),x=c.getContext('2d');let W,H;const P=[];
 const rs=()=>{W=c.width=innerWidth;H=c.height=innerHeight};rs();addEventListener('resize',rs);
-const N=Math.min(55,Math.floor(innerWidth/16));
+const N=Math.min(36,Math.floor(innerWidth/22));
 for(let i=0;i<N;i++)P.push({x:Math.random()*W,y:Math.random()*H,r:Math.random()*1.2+.3,v:Math.random()*.22+.05,a:Math.random()*.35+.1,s:Math.random()*6.28});
-(function f(t){x.clearRect(0,0,W,H);x.fillStyle='#fff';
+(function f(t){if(document.hidden){requestAnimationFrame(f);return}x.clearRect(0,0,W,H);x.fillStyle='#fff';
  for(const p of P){p.y-=p.v;p.x+=Math.sin(t/3200+p.s)*.15;if(p.y<-5){p.y=H+5;p.x=Math.random()*W}
   x.globalAlpha=p.a*(.55+.45*Math.sin(t/1300+p.s));x.beginPath();x.arc(p.x,p.y,p.r,0,6.283);x.fill()}
  requestAnimationFrame(f)})(0)})();
