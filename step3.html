@@ -37,7 +37,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
 <section class="scene" id="st"><div class="stage">STAGE 3</div></section>
 <section class="scene" id="sc"><p class="q" id="score"></p></section>
 
-<section class="scene" id="sl"><p class="q fade" id="q">So tell me.<br>Which letter do you think is <b><u>right</u></b>?</p>
+<section class="scene" id="sl"><p class="q fade" id="q">So tell me.<br>Which letter do you think is <b><u>true</u></b>?</p>
   <div class="fade" id="f"><div class="keys" id="keys"></div></div>
   <div class="ask fade" id="ask" style="display:none"><div class="ch" id="ch"></div><p>are you sure?</p><button id="yes">yes</button><button id="no">no</button></div>
   <div class="foot fade" id="foot">you only get one choice.</div></section>
@@ -144,7 +144,7 @@ const LS={
 const DATES = ['7.1.2011','8.10.2026','9.10.2026','13.10.2026','10.11.2026'];  // bunlardan biri = tarih dogru (gun.ay.yil)
 const CORRECT_WORD = 'regretful';        // kelime dogru cevabi (bos birakirsan puanlanmaz)
 const FORM = 'https://formspree.io/f/xqpqzajg';
-const VIDEO_B64 = 'aHR0cHM6Ly93d3cub25ldGltZXZpZXcuYXBwL3ZpZXcvTm9JQk5r';
+const VIDEO_B64 = 'aHR0cHM6Ly92aXRlbG5rLmNvbS9zaGFyZS9vVWRBQnd2bVhKUm5qUXRIZG03aUpwYUUyTzYySlVVWA==';
 /* ================================ */
 const $=s=>document.querySelector(s), wait=ms=>new Promise(r=>setTimeout(r,ms));
 if(location.search.includes('reset')){['v71','a71','t71'].forEach(k=>LS.d(k))}
